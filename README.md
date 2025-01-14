@@ -1,32 +1,39 @@
 # Behringer-X-Touch-Compact-FL-Script
-Python controller script for X-Touch compact controller and FL Studio 2024
+A Python controller script for the X-Touch Compact controller and FL Studio 2024
 
-### Credit:
-Ian Walker for his [blog post](https://gadgeteer.home.blog/2021/02/22/using-a-behringer-compact-control-surface-with-fl-studio-in-mackie-control-mode-enhanced/) that got me started
-NicoG60 for his [repo](https://github.com/NicoG60/TouchMCU/blob/main/doc/mackie_control_protocol.md) breaking down MCU protocol
-ImageLine for the [scripting docs](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/midi_scripting.htm#script_module_ui)
-ImageLine for the [API stubs page](https://il-group.github.io/FL-Studio-API-Stubs/midi_controller_scripting/midi/gt%20commands/)
+| Credit                                                                                                                                                            |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ian Walker for his [blog post](https://gadgeteer.home.blog/2021/02/22/using-a-behringer-compact-control-surface-with-fl-studio-in-mackie-control-mode-enhanced/)  |
+| NicoG60 for his [repo](https://github.com/NicoG60/TouchMCU/blob/main/doc/mackie_control_protocol.md) breaking down MCU protocol                                   |
+| ImageLine for the [scripting docs](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/midi_scripting.htm#script_module_ui)                |
+| ImageLine for the [API stubs page](https://il-group.github.io/FL-Studio-API-Stubs/midi_controller_scripting/midi/gt%20commands/)                                  |
 
+---
+![x-touch_wip](https://github.com/user-attachments/assets/6d56f999-9b59-4a2d-8e7d-4cceeb7145c5)
 
-
+---
 ### Remapped buttons:
 | Control     | Function              | New Function            |
-| :---------- | :-------------------: | :---------------------: |
+| :---------- | :-------------------  | :---------------------  |
 | Flip        | Invert Pan/Level      | Toggle F5 Playlist      |
 | Marker      | Nothing (Shift?)      | Drop Auto Marker        |
 | Nudge       | Edison Audiologger    | Jump Between Markers    |
 | Cycle       | Toggle Snap Line/None | Pattern/Song loop mode  |
 
-Flip is useful but since selecting a track takes you to mixer with no way to return to playlist, an F5 toggle is preferred.
-Marker drop did nothing, it may have been a shift function per the code. Anyway now its mapped correctly.
+Flip is useful, but selecting a track from the x-touch takes you to mixer with no way to return to playlist so an F5 toggle is preferred.
+
+Marker drop did nothing, it may have been a shift function per the code. Anyway its mapped correctly now.
+
 Nudge opened a new Edison in autorecord mode each time it pressed, pretty useless to me. Jumping between markers is preferred.
+
 Loop only toggled the quantize which isnt helpful with no jog wheel to move anything. 
 
+---
 ### To Do:
-The last thing I want is for Fader 9 to control the main mixer channel fader, not the main monitor out.
-The main mixer fader is motorized  and the monitor control is not.
+I want Fader 9 to control the main mixer channel fader (motorized), not the main monitor out.
 
-Right now Ive had come close by adding these two bits, which allow me to move both controls with fader 9, but I dont know how it retains that link to main monitor.
+Ive come close by adding these two bits, which moves BOTH controls with Fader 9. Im lost how it retains that link to main monitor.
+
 ``` python
 #Adding these two pieces gets it to control BOTH but not just the master fader
 
@@ -72,3 +79,4 @@ Right now Ive had come close by adding these two bits, which allow me to move bo
             if s != '':
                 s = ': ' + s
             self.OnSendTempMsg('Main Mixer Channel' + s, 500)
+```
