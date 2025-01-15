@@ -13,13 +13,13 @@ A Python controller script for the X-Touch Compact controller and FL Studio 2024
 ---
 ### Remapped Controls:
 
-| Control         | Function              | New Function            |
-| :-------------- | :-------------------  | :---------------------  |
-| **Flip**        | Invert Pan/Level      | Toggle F5 Playlist      |
-| **Marker**      | Nothing (Shift?)      | Drop Auto Marker        |
-| **Nudge**       | Edison Audiologger    | Jump Between Markers    |
-| **Cycle**       | Toggle Snap Line/None | Pattern/Song loop mode  |
-| **Master Fader**| Main Monitor level    | Master Fader            |
+| Control         | Function              | New Function            | Hex  |
+| :-------------- | :-------------------  | :---------------------  | :----|
+| **Flip**        | Invert Pan/Level      | Toggle F5 Playlist      | 0x32 |
+| **Marker**      | Nothing (Shift?)      | Drop Auto Marker        | 0x54 |
+| **Nudge**       | Edison Audiologger    | Jump Between Markers    | 0x55 |
+| **Cycle**       | Toggle Snap Line/None | Pattern/Song loop mode  | 0x56 |
+| **Master Fader**| Main Monitor level    | Master Fader            |      |
 
 Flip is useful but Track Select from the X-Touch takes you to mixer with no way to return to playlist, so an F5 toggle is preferred.
 
