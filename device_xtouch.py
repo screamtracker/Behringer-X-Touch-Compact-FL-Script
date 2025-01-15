@@ -1,11 +1,11 @@
 # name=Behringer X-Touch Compact
-# url=
+# url=https://github.com/screamtracker/Behringer-X-Touch-Compact-FL-Script
 # supportedDevices=Behringer X-Touch Compact
 ###########################################################################################
 # History (as compared to default Mackie Script at 20210520)
-# 
 # 20210519 Redirected useful messages to FL Studio hint panel (none of these devices have a suitable display)
 # 20210520 Improved banking such that selected bank tracks will always show in FL UI
+# 20250114 Added everything in the github repo above. See readme.md
 ###########################################################################################
 
 import patterns
@@ -851,9 +851,9 @@ class TMackieCU():
 
 				# mixer
 				if m == 8:
-					self.ColT[m].TrackNum = -2
-					self.ColT[m].BaseEventID = midi.REC_MainVol
-					self.ColT[m].SliderEventID = self.ColT[m].BaseEventID
+					self.ColT[m].TrackNum = midi.TrackNum_Master  # Set to 0 for the master track
+					self.ColT[m].BaseEventID = mixer.getTrackPluginId(self.ColT[m].TrackNum, 0)
+					self.ColT[m].SliderEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_Vol
 					self.ColT[m].SliderName = 'Master Vol'
 				else:
 					self.ColT[m].TrackNum = midi.TrackNum_Master + ((f + m) % mixer.trackCount())
