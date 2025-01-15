@@ -31,6 +31,6 @@ Loop only toggled the quantize which isnt helpful with no jog wheel to move anyt
 
 Who uses main monitor out? :man_facepalming: Master mixer is now mapped and as a bonus this fader is motorized :metal: Monitor was not
 
-```
+---
 ### To Do:
 Refactor code to remove all non-usable buttons and jog methods
