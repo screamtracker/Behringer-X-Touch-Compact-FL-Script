@@ -30,3 +30,7 @@ Nudge opened a new Edison in Autorecord mode each time it pressed, pretty useles
 Loop only toggled the quantize which isnt helpful with no jog wheel to move anything. 
 
 Who uses main monitor out? :man_facepalming: Master mixer is now mapped and as a bonus this fader is motorized :metal: Monitor was not
+
+```
+### To Do:
+Refactor code to remove all non-usable buttons and jog methods
