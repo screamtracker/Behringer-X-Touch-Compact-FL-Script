@@ -2,16 +2,16 @@
 # url=https://github.com/screamtracker/Behringer-X-Touch-Compact-FL-Script
 # supportedDevices=Behringer X-Touch Compact
 
-import patterns
+import playlist
+import channels
 import mixer
-import device
-import transport
+import patterns
 import arrangement
+import ui
+import transport  # plugins not imported
+import device
 import general
 import launchMapPages
-import playlist
-import ui
-import channels
 
 import midi
 import utils
@@ -240,7 +240,7 @@ class TMackieCU():
 						s = ': ' + s
 					self.OnSendTempMsg(self.ColT[event.midiChan].SliderName + s, 500)
 
-### These are Fader 1/2 touched and Master Fader touched
+### Touch Faders
 		elif (event.midiId == midi.MIDI_NOTEON) | (event.midiId == midi.MIDI_NOTEOFF):  # NOTE
 			if event.midiId == midi.MIDI_NOTEON:
 				# slider hold
@@ -250,13 +250,14 @@ class TMackieCU():
 					if event.data2 > 0:
 						# Calculate new track index
 						track_index = event.data1 - 0x68
-						ui.showWindow(midi.widMixer)
-						mixer.setTrackNumber(self.ColT[track_index].TrackNum, midi.curfxScrollToMakeVisible | midi.curfxMinimalLatencyUpdate)
+						#Added so on the EQ page we dont move to another channel while editing EQ
+						if self.Page != MackieCUPage_EQ:  # Override touch faders when on the MackieCUPage_EQ page
+							ui.showWindow(midi.widMixer)
+							mixer.setTrackNumber(self.ColT[track_index].TrackNum, midi.curfxScrollToMakeVisible | midi.curfxMinimalLatencyUpdate)
+
 
 
 				if (event.pmeFlags & midi.PME_System != 0):
-
-
 ### 2E/2F Bank Left/Right
 					if (event.data1 == 0x2E) | (event.data1 == 0x2F):
 						if event.data2 > 0:
