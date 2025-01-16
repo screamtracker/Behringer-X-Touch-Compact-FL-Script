@@ -120,9 +120,9 @@ class TMackieCU():
 		if device.isAssigned():
 			device.midiOutSysex(bytes([0xF0, 0x00, 0x00, 0x66, 0x14, 0x0C, 1, 0xF7]))
 
-		#!self.SetBackLight(2) # backlight timeout to 2 minutes
-		#!self.UpdateClicking()
-		#!self.UpdateMeterMode()
+		self.SetBackLight(2) # backlight timeout to 2 minutes
+		self.UpdateClicking()
+		self.UpdateMeterMode()
 
 		self.SetPage(self.Page)
 		self.OnSendTempMsg('Linked to ' + ui.getProgTitle() + ' (' + ui.getVersion() + ')', 2000);
@@ -244,10 +244,18 @@ class TMackieCU():
 		elif (event.midiId == midi.MIDI_NOTEON) | (event.midiId == midi.MIDI_NOTEOFF):  # NOTE
 			if event.midiId == midi.MIDI_NOTEON:
 				# slider hold
-				if event.data1 in [0x68, 0x69, 0x70]:
+				if 0x68 <= event.data1 <= 0x70:
 					self.SliderHoldCount += -1 + (int(event.data2 > 0) * 2)
 
+					if event.data2 > 0:
+						# Calculate new track index
+						track_index = event.data1 - 0x68
+						ui.showWindow(midi.widMixer)
+						mixer.setTrackNumber(self.ColT[track_index].TrackNum, midi.curfxScrollToMakeVisible | midi.curfxMinimalLatencyUpdate)
+
+
 				if (event.pmeFlags & midi.PME_System != 0):
+
 
 ### 2E/2F Bank Left/Right
 					if (event.data1 == 0x2E) | (event.data1 == 0x2F):
@@ -263,21 +271,32 @@ class TMackieCU():
 							mixer.setTrackNumber((self.FirstTrackT[self.FirstTrack]) + n, midi.curfxScrollToMakeVisible)
 							#print(n)
 ### 30/31 Channel Left/Right
-					elif (event.data1 == 0x30) | (event.data1 == 0x31):
+#					elif (event.data1 == 0x30) | (event.data1 == 0x31):
+#						if event.data2 > 0:
+
+					#elif event.data1 == 0x30:
+					#	#Jump to previous marker and selecting. Writing this way doesnt interfere with mixer tracks.
+					#	transport.globalTransport(midi.FPT_MarkerSelJog, event.pmeFlags | midi.FPT_MarkerSelJog)
+					#	self.OnSendTempMsg(ui.getHintMsg())
+
+					elif event.data1 == 0x30:
 						if event.data2 > 0:
-							# Calculate new track index for backward or forward movement by 1 track
-							step = -1 if event.data1 == 0x30 else 1
-							new_track_index = (self.FirstTrackT[self.FirstTrack] + step) % mixer.trackCount()
-							self.SetFirstTrack(new_track_index)
-							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16))
+							# Jump to the previous marker
+							arrangement.jumpToMarker(-1, True)
+							self.OnSendTempMsg("Jumped to previous marker")
+
+					elif event.data1 == 0x31:
+						if event.data2 > 0:
+							# Jump to the next marker
+							arrangement.jumpToMarker(1, True)
+							self.OnSendTempMsg("Jumped to next marker")
+
 
 ### Flip button
 					elif event.data1 == 0x32: # Press F5 - Playlist
 						device.directFeedback(event)
 						if event.data2 > 0:
-							#ui.setFocused(midi.widPlaylist)
-							#ui.showWindow(midi.widPlaylist)
-							transport.globalTransport(midi.FPT_F5, event.pmeFlags) 
+							transport.globalTransport(midi.FPT_F5, event.pmeFlags)
 							self.OnSendTempMsg(ui.getHintMsg()) 
 
 
