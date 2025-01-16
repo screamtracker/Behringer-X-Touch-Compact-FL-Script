@@ -1,12 +1,6 @@
 # name=Behringer X-Touch Compact
 # url=https://github.com/screamtracker/Behringer-X-Touch-Compact-FL-Script
 # supportedDevices=Behringer X-Touch Compact
-###########################################################################################
-# History (as compared to default Mackie Script at 20210520)
-# 20210519 Redirected useful messages to FL Studio hint panel (none of these devices have a suitable display)
-# 20210520 Improved banking such that selected bank tracks will always show in FL UI
-# 20250114 Added everything in the github repo above. See readme.md
-###########################################################################################
 
 import patterns
 import mixer
@@ -27,19 +21,19 @@ MackieCU_KnobOffOnT = [(midi.MIDI_CONTROLCHANGE + (1 << 6)) << 16, midi.MIDI_CON
 MackieCU_nFreeTracks = 64
 
 #const
-MackieCUNote_Undo = 0x3C
-MackieCUNote_Pat = 0x3E
-MackieCUNote_Mix = 0x3F
-MackieCUNote_Chan = 0x40
-MackieCUNote_Tempo = 0x41
-MackieCUNote_Free1 = 0x42
-MackieCUNote_Free2 = 0x43
-MackieCUNote_Free3 = 0x44
-MackieCUNote_Free4 = 0x45
-MackieCUNote_Marker = 0x48
-MackieCUNote_Zoom = 0x64
-MackieCUNote_Move = 0x46
-MackieCUNote_Window = 0x4C
+MackieCUNote_Undo = 0x3C	#F7
+MackieCUNote_Pat = 0x3E		#MIDI tracks
+MackieCUNote_Mix = 0x3F		#Inputs
+MackieCUNote_Chan = 0x40	#Audio tracks
+MackieCUNote_Tempo = 0x41	#Audio instr
+MackieCUNote_Free1 = 0x42	#aux
+MackieCUNote_Free2 = 0x43	#busses
+MackieCUNote_Free3 = 0x44	#outputs
+MackieCUNote_Free4 = 0x45	#user
+MackieCUNote_Marker = 0x48	#control
+MackieCUNote_Zoom = 0x64	#Zoom ## XT Compact - R10 Sends?
+MackieCUNote_Move = 0x46	#shift
+MackieCUNote_Window = 0x4C	#Trim
 # Mackie CU pages
 MackieCUPage_Pan = 0
 MackieCUPage_Stereo = 1
@@ -126,9 +120,9 @@ class TMackieCU():
 		if device.isAssigned():
 			device.midiOutSysex(bytes([0xF0, 0x00, 0x00, 0x66, 0x14, 0x0C, 1, 0xF7]))
 
-		self.SetBackLight(2) # backlight timeout to 2 minutes
-		self.UpdateClicking()
-		self.UpdateMeterMode()
+		#!self.SetBackLight(2) # backlight timeout to 2 minutes
+		#!self.UpdateClicking()
+		#!self.UpdateMeterMode()
 
 		self.SetPage(self.Page)
 		self.OnSendTempMsg('Linked to ' + ui.getProgTitle() + ' (' + ui.getVersion() + ')', 2000);
@@ -160,9 +154,9 @@ class TMackieCU():
 		if flags & midi.HW_Dirty_Mixer_Sel:
 			self.UpdateMixer_Sel()
 
-		if flags & midi.HW_Dirty_Mixer_Display:
-			self.UpdateTextDisplay()
-			self.UpdateColT()
+		#!if flags & midi.HW_Dirty_Mixer_Display:
+		#!	self.UpdateTextDisplay()
+		#!	self.UpdateColT()
 
 		if flags & midi.HW_Dirty_Mixer_Controls:
 			for n in range(0, len(self.ColT)):
@@ -170,8 +164,8 @@ class TMackieCU():
 					self.UpdateCol(n)
 
 		# LEDs
-		if flags & midi.HW_Dirty_LEDs:
-			self.UpdateLEDs()
+		#!if flags & midi.HW_Dirty_LEDs:
+		#!	self.UpdateLEDs()
 
 	def TrackSel(self, Index, Step):
 
@@ -186,72 +180,10 @@ class TMackieCU():
 			s = patterns.getPatternName(patterns.patternNumber())
 			self.OnSendTempMsg(self.ArrowsStr + 'Pattern: ' + s, 500);
 
-	def Jog(self, event):
-
-		if self.JogSource == 0:
-			transport.globalTransport(midi.FPT_Jog + int(self.Shift ^ self.Scrub), event.outEv, event.pmeFlags) # relocate
-		elif self.JogSource == MackieCUNote_Move:
-			transport.globalTransport(midi.FPT_MoveJog, event.outEv, event.pmeFlags)
-		elif self.JogSource == MackieCUNote_Marker:
-			if self.Shift:
-				s = 'Marker selection'
-			else:
-				s = 'Marker jump'
-			if event.outEv != 0:
-				if transport.globalTransport(midi.FPT_MarkerJumpJog + int(self.Shift), event.outEv, event.pmeFlags) == midi.GT_Global:
-					s = ui.getHintMsg()
-			self.OnSendTempMsg(self.ArrowsStr + s, 500)
-
-		elif self.JogSource == MackieCUNote_Undo:
-			if event.outEv == 0:
-				s = 'Undo history'
-			elif transport.globalTransport(midi.FPT_UndoJog, event.outEv, event.pmeFlags) == midi.GT_Global:
-				s = ui.GetHintMsg()
-			self.OnSendTempMsg(self.ArrowsStr + s + ' (level ' + general.getUndoLevelHint() + ')', 500)
-
-		elif self.JogSource == MackieCUNote_Zoom:
-			if event.outEv != 0:
-				transport.globalTransport(midi.FPT_HZoomJog + int(self.Shift), event.outEv, event.pmeFlags)
-
-		elif self.JogSource == MackieCUNote_Window:
-
-			if event.outEv != 0:
-				transport.globalTransport(midi.FPT_WindowJog, event.outEv, event.pmeFlags)
-			s = ui.getFocusedFormCaption()
-			if s != "":
-				self.OnSendTempMsg(self.ArrowsStr + 'Current window: ' + s, 500)
-
-		elif (self.JogSource == MackieCUNote_Pat) | (self.JogSource == MackieCUNote_Mix) | (self.JogSource == MackieCUNote_Chan):
-			self.TrackSel(self.JogSource - MackieCUNote_Pat, event.outEv)
-
-		elif self.JogSource == MackieCUNote_Tempo:
-			if event.outEv != 0:
-				channels.processRECEvent(midi.REC_Tempo, channels.incEventValue(midi.REC_Tempo, event.outEv, midi.EKRes), midi.PME_RECFlagsT[int(event.pmeFlags & midi.PME_LiveInput != 0)] - midi.REC_FromMIDI)
-			self.OnSendTempMsg(self.ArrowsStr + 'Tempo: ' + mixer.getEventIDValueString(midi.REC_Tempo, mixer.getCurrentTempo()), 500)
-
-		elif self.JogSource in [MackieCUNote_Free1, MackieCUNote_Free2, MackieCUNote_Free3, MackieCUNote_Free4]:
-			# CC
-			event.data1 = 390 + self.JogSource - MackieCUNote_Free1
-
-			if event.outEv != 0:
-				event.isIncrement = 1
-				s = chr(0x7E + int(event.outEv < 0))
-				self.OnSendTempMsg(self.ArrowsStr + 'Free jog ' + str(event.data1) + ': ' + s, 500)
-				device.processMIDICC(event)
-				return
-			else:
-				self.OnSendTempMsg(self.ArrowsStr + 'Free jog ' + str(event.data1), 500)
-
-
 	def OnMidiMsg(self, event):
 
-		ArrowStepT = [2, -2, -1, 1]
-		CutCopyMsgT = ('Cut', 'Copy', 'Paste', 'Insert', 'Delete')  #FPT_Cut..FPT_Delete
-
+		# if value > 64 is TRUE (-/decrement) else (+/increment)
 		if (event.midiId == midi.MIDI_CONTROLCHANGE):
-    		# Uncomment this next line to default JogDial operations to the PlayList
-			#ui.setFocused(midi.widPlaylist)
-			########################################################################
 			if (event.midiChan == 0):
 				event.inEv = event.data2
 				if event.inEv >= 0x40:
@@ -259,11 +191,8 @@ class TMackieCU():
 				else:
 					event.outEv = event.inEv
 
-				if event.data1 == 0x3C:
-					self.Jog(event)
-					event.handled = True
-					# knobs
-				elif event.data1 in [0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17]:
+				# Resolution for VPot knob
+				if event.data1 in [0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17]: 
 					r = utils.KnobAccelToRes2(event.outEv)  #todo outev signof
 					Res = r * (1 / (40 * 2.5))
 					if self.Page == MackieCUPage_Free:
@@ -283,7 +212,7 @@ class TMackieCU():
 			else:
 				event.handled = False # for extra CCs in emulators
 
-		elif event.midiId == midi.MIDI_PITCHBEND: # pitch bend (faders)
+		elif event.midiId == midi.MIDI_PITCHBEND: # Faders use pitch Bend messages
 
 			if event.midiChan <= 8:
 				event.inEv = event.data1 + (event.data2 << 7)
@@ -299,6 +228,7 @@ class TMackieCU():
 					event.midiChanEx = event.midiChanEx & (not 0xF)
 					self.OnSendTempMsg('Free slider ' + str(event.data1) + ': ' + ui.getHintValue(event.outEv, midi.FromMIDI_Max), 500)
 					device.processMIDICC(event)
+
 				elif self.ColT[event.midiChan].SliderEventID >= 0:
 					# slider (mixer track volume)
 					event.handled = True
@@ -310,6 +240,7 @@ class TMackieCU():
 						s = ': ' + s
 					self.OnSendTempMsg(self.ColT[event.midiChan].SliderName + s, 500)
 
+### These are Fader 1/2 touched and Master Fader touched
 		elif (event.midiId == midi.MIDI_NOTEON) | (event.midiId == midi.MIDI_NOTEOFF):  # NOTE
 			if event.midiId == midi.MIDI_NOTEON:
 				# slider hold
@@ -317,46 +248,30 @@ class TMackieCU():
 					self.SliderHoldCount += -1 + (int(event.data2 > 0) * 2)
 
 				if (event.pmeFlags & midi.PME_System != 0):
-					# F1..F8 faders
-					if self.Shift & (event.data1 in [0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D]):
-						transport.globalTransport(midi.FPT_F1 - 0x36 + event.data1, int(event.data2 > 0) * 2, event.pmeFlags)
-						event.data1 = 0xFF
 
-					if event.data1 == 0x34: # display mode
+### 2E/2F Bank Left/Right
+					if (event.data1 == 0x2E) | (event.data1 == 0x2F):
 						if event.data2 > 0:
-							if self.Shift:
-								self.ExtenderPos = abs(self.ExtenderPos - 1)
-								self.FirstTrackT[self.FirstTrack] = 1
-								self.SetPage(self.Page)
-								self.OnSendTempMsg('Extender on ' + self.MackieCU_ExtenderPosT[self.ExtenderPos], 1500)
-							else:
-								self.MeterMode = (self.MeterMode + 1) % 3
-								self.OnSendTempMsg(self.MackieCU_MeterModeNameT[self.MeterMode])
-								self.UpdateMeterMode()
-								device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16) )
-					elif event.data1 == 0x35: # time format
-						if event.data2 > 0:
-							ui.setTimeDispMin()
-					elif (event.data1 == 0x2E) | (event.data1 == 0x2F): # mixer bank
-						if event.data2 > 0:
-							self.SetFirstTrack(self.FirstTrackT[self.FirstTrack] - 8 + int(event.data1 == 0x2F) * 16)
-							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16))
+							# Calculate new track index for backward/forward movement by 1 track
+							step = -1 if event.data1 == 0x2E else 1
+							new_track_index = (self.FirstTrackT[self.FirstTrack] + step) % mixer.trackCount()
+							self.SetFirstTrack(new_track_index)
+							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 1) + (event.data2 << 1))
 							# 20210520 Improved banking such that selected bank tracks will always show in FL UI
-							n=0
-							if event.data1 == 0x2F: n=7
-							mixer.setTrackNumber((self.FirstTrackT[self.FirstTrack])+n, midi.curfxScrollToMakeVisible)
-							print(n)
-							#######################################################################################
+							n = 0
+							if event.data1 == 0x2F: n = 0
+							mixer.setTrackNumber((self.FirstTrackT[self.FirstTrack]) + n, midi.curfxScrollToMakeVisible)
+							#print(n)
+### 30/31 Channel Left/Right
 					elif (event.data1 == 0x30) | (event.data1 == 0x31):
 						if event.data2 > 0:
-							self.SetFirstTrack(self.FirstTrackT[self.FirstTrack] - 1 + int(event.data1 == 0x31) * 2)
-							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16) )
-					#elif event.data1 == 0x32: # self.Flip # Removed and used for F5
-					#	if event.data2 > 0:
-					#		self.Flip = not self.Flip
-					#		device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16))
-					#		self.UpdateColT()
-					#		self.UpdateLEDs()
+							# Calculate new track index for backward or forward movement by 1 track
+							step = -1 if event.data1 == 0x30 else 1
+							new_track_index = (self.FirstTrackT[self.FirstTrack] + step) % mixer.trackCount()
+							self.SetFirstTrack(new_track_index)
+							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16))
+
+### Flip button
 					elif event.data1 == 0x32: # Press F5 - Playlist
 						device.directFeedback(event)
 						if event.data2 > 0:
@@ -365,38 +280,9 @@ class TMackieCU():
 							transport.globalTransport(midi.FPT_F5, event.pmeFlags) 
 							self.OnSendTempMsg(ui.getHintMsg()) 
 
-					elif event.data1 == 0x33: # smoothing
-						if event.data2 > 0:
-							self.SmoothSpeed = int(self.SmoothSpeed == 0) * 469
-							self.UpdateLEDs()
-							self.OnSendTempMsg('Control smoothing ' + OffOnStr[int(self.SmoothSpeed > 0)])
-					elif event.data1 == 0x65: # self.Scrub
-						if event.data2 > 0:
-							self.Scrub = not self.Scrub
-							self.UpdateLEDs()
-							# jog sources
-					elif event.data1 in [MackieCUNote_Undo, MackieCUNote_Pat, MackieCUNote_Mix, MackieCUNote_Chan, MackieCUNote_Tempo, MackieCUNote_Free1, MackieCUNote_Free2, MackieCUNote_Free3, MackieCUNote_Free4, MackieCUNote_Marker, MackieCUNote_Zoom, MackieCUNote_Move, MackieCUNote_Window]:
-						# update jog source
-						self.SliderHoldCount +=  -1 + (int(event.data2 > 0) * 2)
-						if event.data1 in [MackieCUNote_Zoom, MackieCUNote_Window]:
-							device.directFeedback(event)
-						if event.data2 == 0:
-							if self.JogSource == event.data1:
-								self.SetJogSource(0)
-						else:
-							self.SetJogSource(event.data1)
-							event.outEv = 0
-							self.Jog(event) # for visual feedback
 
-					elif event.data1 in [0x60, 0x61, 0x62, 0x63]: # arrows
-						if self.JogSource == 0:
-							transport.globalTransport(midi.FPT_Up - 0x60 + event.data1, int(event.data2 > 0) * 2, event.pmeFlags)
-						else:
-							if event.data2 > 0:
-								event.inEv = ArrowStepT[event.data1 - 0x60]
-								event.outEv = event.inEv
-								self.Jog(event)
 
+### This controls Rotarys 9-16
 					elif event.data1 in [0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D]: # self.Page
 						self.SliderHoldCount +=  -1 + (int(event.data2 > 0) * 2)
 						if event.data2 > 0:
@@ -416,24 +302,7 @@ class TMackieCU():
 							transport.globalTransport(midi. FPT_MarkerJumpJog, event.pmeFlags) 
 							self.OnSendTempMsg(ui.getHintMsg())
 
-					elif event.data1 == 0x57: # metronome/button self.Clicking
-						if event.data2 > 0:
-							if self.Shift:
-								self.Clicking = not self.Clicking
-								self.UpdateClicking()
-								self.OnSendTempMsg('self.Clicking ' + OffOnStr[self.Clicking])
-							else:
-								transport.globalTransport(midi.FPT_Metronome, 1, event.pmeFlags)
-
-					elif event.data1 == 0x58: # precount
-						if event.data2 > 0:
-							transport.globalTransport(midi.FPT_CountDown, 1, event.pmeFlags)
-
-					elif event.data1 in [0x36, 0x37, 0x38, 0x39, 0x3A]: # cut/copy/paste/insert/delete
-						transport.globalTransport(midi.FPT_Cut + event.data1 - 0x36, int(event.data2 > 0) * 2, event.pmeFlags)
-						if event.data2 > 0:
-							self.OnSendTempMsg(CutCopyMsgT[midi.FPT_Cut + event.data1 - 0x36 - 50])
-
+### RW/FWD will also move up and down in a menu
 					elif (event.data1 == 0x5B) | (event.data1 == 0x5c) : # << >>
 						if self.Shift:
 							if event.data2 == 0:
@@ -449,28 +318,30 @@ class TMackieCU():
 
 					elif event.data1 == 0x5D: # stop
 						transport.globalTransport(midi.FPT_Stop, int(event.data2 > 0) * 2, event.pmeFlags)
+
+### FYI In a Menu Play=Enter. Works but gives a traceback OnMidiMSG operation unsafe, can crash FL
 					elif event.data1 == 0x5E: # play
 						transport.globalTransport(midi.FPT_Play, int(event.data2 > 0) * 2, event.pmeFlags)
+
 					elif event.data1 == 0x5F: # record
 						transport.globalTransport(midi.FPT_Record, int(event.data2 > 0) * 2, event.pmeFlags)
+
 					elif event.data1 == 0x56: # song/loop
 						transport.globalTransport(midi.FPT_Loop, int(event.data2 > 0) * 2, event.pmeFlags)
-					elif event.data1 == 0x59: # mode
-						transport.globalTransport(midi.FPT_Mode, int(event.data2 > 0) * 2, event.pmeFlags)
-						device.directFeedback(event)
 
-					elif event.data1 == 0x5A: # snap This was 0x56
-						if self.Shift:
-							if event.data2 > 0:
-								transport.globalTransport(midi.FPT_SnapMode, 1, event.pmeFlags)
-						else:
-							transport.globalTransport(midi.FPT_Snap, int(event.data2 > 0) * 2, event.pmeFlags)
+#					elif event.data1 == 0x56: # snap Commented for reuse, toggles last snap level. Does shift cycle?
+#						if self.Shift:
+#							if event.data2 > 0:
+#								transport.globalTransport(midi.FPT_SnapMode, 1, event.pmeFlags)
+#						else:
+#							transport.globalTransport(midi.FPT_Snap, int(event.data2 > 0) * 2, event.pmeFlags)
 
-					elif event.data1 == 0x52: # ESC
-						transport.globalTransport(midi.FPT_Escape + int(self.Shift) * 2, int(event.data2 > 0) * 2, event.pmeFlags)
-					elif event.data1 == 0x53: # ENTER
-						transport.globalTransport(midi.FPT_Enter + int(self.Shift) * 2, int(event.data2 > 0) * 2, event.pmeFlags)
-					elif event.data1 in [0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27]: # knob reset
+### Toggles Main Record, like FPT_Record.
+#					elif event.data1 == 0x56: # mode
+#						transport.globalTransport(midi.FPT_Mode, int(event.data2 > 0) * 2, event.pmeFlags)
+#						device.directFeedback(event)
+
+					elif event.data1 in [0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27]: # VPot click. Reset or assign Send
 						if self.Page == MackieCUPage_Free:
 							i = event.data1 - 0x20
 							self.ColT[i].KnobHeld = event.data2 > 0
@@ -505,6 +376,7 @@ class TMackieCU():
 							device.hardwareRefreshMixerTrack(self.ColT[i].TrackNum)
 							return
 
+### Required. Links to channels
 					if (event.pmeFlags & midi.PME_System_Safe != 0):
 						if event.data1 == 0x47: # link selected channels to current mixer track
 							if event.data2 > 0:
@@ -512,27 +384,17 @@ class TMackieCU():
 									mixer.linkTrackToChannel(midi.ROUTE_StartingFromThis)
 								else:
 									mixer.linkTrackToChannel(midi.ROUTE_ToThis)
-						elif event.data1 == 0x4A: # focus browser
-							if event.data2 > 0:
-								ui.showWindow(midi.widBrowser)
 
-						elif event.data1 == 0x4B: # focus step seq
-							if event.data2 > 0:
-								ui.showWindow(midi.widChannelRack)
+### If called from F5 brings up modemenu, touch interface? Maybe useful with arrows
+#						elif event.data1 == 0x56: # menu
+#							transport.globalTransport(midi.FPT_Menu, int(event.data2 > 0) * 2, event.pmeFlags)
+#							if event.data2 > 0:
+#								self.OnSendTempMsg('Menu', 10)
 
-						elif event.data1 == 0x51: # menu
-							transport.globalTransport(midi.FPT_Menu, int(event.data2 > 0) * 2, event.pmeFlags)
-							if event.data2 > 0:
-								self.OnSendTempMsg('Menu', 10)
-
-						elif event.data1 == 0x3B: # tools
-							transport.globalTransport(midi.FPT_ItemMenu, int(event.data2 > 0) * 2, event.pmeFlags)
-							if event.data2 > 0:
-								self.OnSendTempMsg('Tools', 10)
-
-						elif event.data1 == 0x3D: # undo/redo
-							if (transport.globalTransport(midi.FPT_Undo, int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
-								self.OnSendTempMsg(ui.getHintMsg() + ' (level ' + general.getUndoLevelHint() + ')')
+# Commenting for reuse
+#						elif event.data1 == 0x56: # undo/redo
+#							if (transport.globalTransport(midi.FPT_Undo, int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
+#								self.OnSendTempMsg(ui.getHintMsg() + ' (level ' + general.getUndoLevelHint() + ')')
 
 						elif event.data1 in [0x4D, 0x4E, 0x4F]: # punch in/punch out/punch
 							if event.data1 == 0x4F:
@@ -556,13 +418,9 @@ class TMackieCU():
 								if t >= 0:
 									self.OnSendTempMsg(ui.getHintMsg())
 
-						elif event.data1 == 0x49: # marker add
-							if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
-								self.OnSendTempMsg(ui.getHintMsg())
 						elif (event.data1 >= 0x18) & (event.data1 <= 0x1F): # select mixer track
 							if event.data2 > 0:
 								i = event.data1 - 0x18
-
 								ui.showWindow(midi.widMixer)
 								mixer.setTrackNumber(self.ColT[i].TrackNum, midi.curfxScrollToMakeVisible | midi.curfxMinimalLatencyUpdate)
 
@@ -587,9 +445,6 @@ class TMackieCU():
 								else:
 									self.OnSendTempMsg(mixer.getTrackName(self.ColT[event.data1].TrackNum) + ' unarmed')
 
-						elif event.data1 == 0x50: # save/save new
-							transport.globalTransport(midi.FPT_Save + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags)
-
 						event.handled = True
 				else:
 					event.handled = False
@@ -598,10 +453,7 @@ class TMackieCU():
 
 	def SendMsg(self, Msg, Row = 0):
 		1==True
-		#No point in doing this but most callls to this procedure kept for easy comparrison/code compare with "device_MackieCU.py"
-		#sysex = bytearray([0xF0, 0x00, 0x00, 0x66, 0x14, 0x12, (self.LastMsgLen + 1) * Row]) + bytearray(Msg.ljust(self.LastMsgLen + 1, ' '), 'utf-8')
-		#sysex.append(0xF7)
-		#device.midiOutSysex(bytes(sysex))
+		#No point in doing this but most calls to this procedure kept for easy comparison/code compare with "device_MackieCU.py"
 
 	# update the CU time display
 	def SendTimeMsg(self, Msg):
@@ -619,28 +471,19 @@ class TMackieCU():
 		self.LastTimeMsg = TempMsg
 
 	def SendAssignmentMsg(self, Msg):
-
 		s_ansi = Msg + chr(0) #AnsiString(Msg);
 		if device.isAssigned():
 			for m in range(1, 3):
 				device.midiOutMsg(midi.MIDI_CONTROLCHANGE + ((0x4C - m) << 8) + (ord(s_ansi[m]) << 16))
 
 	def UpdateTempMsg(self):
-		0==False
-		#self.SendMsg(self.TempMsgT[int(self.TempMsgCount != 0)])
-		# 20210519 Redirected temporary text output to FL Studio hint panel
-		###################################################################
+		0==False 	# 20210519 Redirected temporary text output to FL Studio hint panel
 
 
 	def OnSendTempMsg(self, Msg, Duration = 1000):
-		ui.setHintMsg(Msg)
-		#if self.CurMeterMode == 0:
-		#	self.TempMsgCount = (Duration // 48) + 1
-		#self.TempMsgT[1] = Msg
-		#self.TempMsgDirty = True
+		ui.setHintMsg(Msg)	# 20210519 Redirected temporary text output to FL Studio hint panel
 
 	def OnUpdateBeatIndicator(self, Value):
-
 		SyncLEDMsg = [ midi.MIDI_NOTEON + (0x5E << 8), midi.MIDI_NOTEON + (0x5E << 8) + (0x7F << 16), midi.MIDI_NOTEON + (0x5E << 8) + (0x7F << 16)]
 
 		if device.isAssigned():
