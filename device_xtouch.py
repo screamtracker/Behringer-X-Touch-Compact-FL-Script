@@ -474,6 +474,15 @@ class TMackieCU():
 			else:
 				event.handled = False
 
+			# Handle rotary knob on MackieCU_Sample page to change channel track
+			if self.Page == MackieCUPage_Sample and self.Shift:  # Assuming Shift is used for ALT
+				if event.data1 in [0x17]:  # MIDI CC for rotary knobs
+					if event.data2 > 64:
+						channels.selectOneChannel(min(channels.selectedChannel() + 1, channels.channelCount() - 1))
+					else:
+						channels.selectOneChannel(max(channels.selectedChannel() - 1, 0))
+
+
 	def SendMsg(self, Msg, Row = 0):
 		1==True
 		#No point in doing this but most calls to this procedure kept for easy comparison/code compare with "device_MackieCU.py"
