@@ -1,4 +1,3 @@
-
 # name=Behringer X-Touch Compact
 # url=https://github.com/screamtracker/Behringer-X-Touch-Compact-FL-Script
 # supportedDevices=Behringer X-Touch Compact
