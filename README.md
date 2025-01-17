@@ -53,4 +53,11 @@ Now that I have available touch faders and 0x55 I will look at more reassignment
 
 Dive into the INST pot and see what I can do, it is a powerful control
 
+---
+### Tested Bits
+Cycles thru windows, maybe better than dedicated F5/F6
+transport.globalTransport(midi.FPT_NextWindow, int(event.data2 > 0) * 1)
+
+Cycles thru channel tracks
+transport.globalTransport(midi.FPT_ChannelJog, int(event.data2 > 0) * 1, event.pmeFlags)
 
