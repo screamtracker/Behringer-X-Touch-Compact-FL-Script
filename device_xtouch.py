@@ -12,6 +12,7 @@ import transport  # plugins not imported
 import device
 import general
 import launchMapPages
+
 import midi
 import utils
 import time
@@ -238,6 +239,8 @@ class TMackieCU():
 					if s != '':
 						s = ': ' + s
 					self.OnSendTempMsg(self.ColT[event.midiChan].SliderName + s, 500)
+				else:
+					event.handled = False
 
 ### Touch Faders
 		elif (event.midiId == midi.MIDI_NOTEON) | (event.midiId == midi.MIDI_NOTEOFF):  # NOTE
@@ -597,27 +600,11 @@ class TMackieCU():
 				if d >= 0:
 					self.FreeCtrlT[n] = min(round(d * 16384), 16384)
 
-		elif self.Page == MackieCUPage_Sample:
-			# Add fader assignment logic here
-			self.assign_faders_to_channels()
-
 		if (oldPage == MackieCUPage_Free) | (self.Page == MackieCUPage_Free):
 			self.UpdateMeterMode()
 		self.UpdateColT()
 		self.UpdateLEDs()
 		self.UpdateTextDisplay()
-
-	def assign_faders_to_channels(self):
-		num_channels = channels.channelCount()
-		fader_controls = []
-
-		for i in range(num_channels):
-			channel_idx = channels.channelNumber()
-			fader_controls.append(channel_idx)
-
-		# You can store the fader_controls if needed
-		self.fader_controls = fader_controls
-
 
 	def UpdateMixer_Sel(self):
 
@@ -752,12 +739,19 @@ class TMackieCU():
 						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_Pan
 						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
 						self.ColT[m].KnobName = mixer.getTrackName( self.ColT[m].TrackNum) + ' - ' + 'Pan'
-
+#					elif self.Page == MackieCUPage_Sample:
+#						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_SS
+#						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
+#						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
 					elif self.Page == MackieCUPage_Sample:
-						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_SS
-						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
-						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
-
+						for m in range(0, len(self.ColT)):
+							if m < 8:
+								self.ColT[m].TrackNum = m
+								self.ColT[m].SliderEventID = channels.getChannelPitchEventId(self.ColT[m].TrackNum)
+								self.ColT[m].SliderName = 'Track ' + str(self.ColT[m].TrackNum + 1) + ' Pitch'
+							else:
+								self.ColT[m].SliderEventID = -1
+								self.ColT[m].SliderName = ''
 					elif self.Page == MackieCUPage_Sends:
 						self.ColT[m].KnobEventID = CurID + midi.REC_Mixer_Send_First + self.ColT[m].TrackNum
 						s = mixer.getEventIDName(self.ColT[m].KnobEventID)
@@ -768,7 +762,6 @@ class TMackieCU():
 							self.ColT[m].KnobMode = 4
 						else:
 							self.ColT[m].KnobMode = 2
-
 					elif self.Page == MackieCUPage_FX:
 						CurID = mixer.getTrackPluginId(mixer.trackNumber(), m)
 						self.ColT[m].KnobEventID = CurID + midi.REC_Plug_MixLevel
@@ -784,7 +777,6 @@ class TMackieCU():
 						else:
 							self.ColT[m].KnobMode = 4
 						self.ColT[m].KnobCenter = int(IsValid & IsEnabledAuto)
-
 					elif self.Page == MackieCUPage_EQ:
 						if m < 3:
 							# gain & freq
