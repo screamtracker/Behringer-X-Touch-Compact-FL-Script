@@ -32,7 +32,7 @@ MackieCUNote_Free3 = 0x44	#outputs
 MackieCUNote_Free4 = 0x45	#user
 MackieCUNote_Marker = 0x48	#control
 MackieCUNote_Zoom = 0x64	#Zoom ## XT Compact - R10 Sends?
-MackieCUNote_Move = 0x46	#shift
+MackieCUNote_Move = 0x32	#Shift. Was 0x46
 MackieCUNote_Window = 0x4C	#Trim
 # Mackie CU pages
 MackieCUPage_Pan = 0
@@ -293,13 +293,17 @@ class TMackieCU():
 							self.OnSendTempMsg("Jumped to next marker")
 
 
-### Flip button
-					elif event.data1 == 0x32: # Press F5 - Playlist
-						device.directFeedback(event)
-						if event.data2 > 0:
-							transport.globalTransport(midi.FPT_F5, event.pmeFlags)
-							self.OnSendTempMsg(ui.getHintMsg()) 
+### Flip button (Used for Shift)
+#					elif event.data1 == 0x32: # Press F5 - Playlist
+#						device.directFeedback(event)
+#						if event.data2 > 0:
+#							transport.globalTransport(midi.FPT_F5, event.pmeFlags)
+#							self.OnSendTempMsg(ui.getHintMsg()) 
+#
 
+					elif event.data1 == 0x32: # self.Shift
+						self.Shift = event.data2 > 0
+						device.directFeedback(event)
 
 
 ### This controls Rotarys 9-16
@@ -311,11 +315,25 @@ class TMackieCU():
 							self.SetPage(n)
 							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16) )
 
-					elif event.data1 == 0x54: # Drop Auto Marker
-						device.directFeedback(event)
-						if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
-							self.OnSendTempMsg(ui.getHintMsg())
+### Marker
 
+					elif event.data1 == 0x54: # Press F5 - Playlist
+						if event.data2 > 0: #Button Press
+							if self.Shift:
+								transport.globalTransport(midi.FPT_F6, event.pmeFlags)
+							else:
+								transport.globalTransport(midi.FPT_F5, event.pmeFlags)
+							self.OnSendTempMsg(ui.getHintMsg())
+						device.directFeedback(event)
+
+
+
+					#Commented as 0x54 is being used for F5/F6
+					#elif event.data1 == 0x54: # Drop Auto Marker
+					#	device.directFeedback(event)
+					#	if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
+					#		self.OnSendTempMsg(ui.getHintMsg())
+### Nudge
 					elif event.data1 == 0x55: # Jump Markers
 						device.directFeedback(event)
 						if event.data2 > 0:
@@ -323,6 +341,8 @@ class TMackieCU():
 							self.OnSendTempMsg(ui.getHintMsg())
 
 ### RW/FWD will also move up and down in a menu
+
+					#Mapping Shift to the flip button selects playback speed (1/2 time or 2x). commented as is enabled above for F5/F6
 					elif (event.data1 == 0x5B) | (event.data1 == 0x5c) : # << >>
 						if self.Shift:
 							if event.data2 == 0:
