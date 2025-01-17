@@ -314,11 +314,13 @@ class TMackieCU():
 								self.SetPage(n)
 								device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16) )
 
-					elif event.data1 == 0x54: # Drop Auto Marker
-						device.directFeedback(event)
-						if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
-							self.OnSendTempMsg(ui.getHintMsg())
+# 0x54 is free now
+#					elif event.data1 == 0x54: # Drop Auto Marker
+#						device.directFeedback(event)
+#						if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
+#							self.OnSendTempMsg(ui.getHintMsg())
 
+#0x55 is free now
 					elif event.data1 == 0x55: # Jump Markers
 						device.directFeedback(event)
 						if event.data2 > 0:
@@ -473,14 +475,6 @@ class TMackieCU():
 					event.handled = False
 			else:
 				event.handled = False
-
-			# Handle rotary knob on MackieCU_Sample page to change channel track
-			if self.Page == MackieCUPage_Sample and self.Shift:  # Assuming Shift is used for ALT
-				if event.data1 in [0x17]:  # MIDI CC for rotary knobs
-					if event.data2 > 64:
-						channels.selectOneChannel(min(channels.selectedChannel() + 1, channels.channelCount() - 1))
-					else:
-						channels.selectOneChannel(max(channels.selectedChannel() - 1, 0))
 
 
 	def SendMsg(self, Msg, Row = 0):
@@ -748,19 +742,12 @@ class TMackieCU():
 						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_Pan
 						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
 						self.ColT[m].KnobName = mixer.getTrackName( self.ColT[m].TrackNum) + ' - ' + 'Pan'
-#					elif self.Page == MackieCUPage_Sample:
-#						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_SS
-#						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
-#						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
+
 					elif self.Page == MackieCUPage_Sample:
-						for m in range(0, len(self.ColT)):
-							if m < 8:
-								self.ColT[m].TrackNum = m
-								self.ColT[m].SliderEventID = channels.getChannelPitchEventId(self.ColT[m].TrackNum)
-								self.ColT[m].SliderName = 'Track ' + str(self.ColT[m].TrackNum + 1) + ' Pitch'
-							else:
-								self.ColT[m].SliderEventID = -1
-								self.ColT[m].SliderName = ''
+						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + channels.selectOneChannel
+						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
+						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
+
 					elif self.Page == MackieCUPage_Sends:
 						self.ColT[m].KnobEventID = CurID + midi.REC_Mixer_Send_First + self.ColT[m].TrackNum
 						s = mixer.getEventIDName(self.ColT[m].KnobEventID)
