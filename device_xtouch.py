@@ -1,3 +1,4 @@
+
 # name=Behringer X-Touch Compact
 # url=https://github.com/screamtracker/Behringer-X-Touch-Compact-FL-Script
 # supportedDevices=Behringer X-Touch Compact
@@ -36,7 +37,7 @@ MackieCUNote_Move = 0x46	#shift
 MackieCUNote_Window = 0x4C	#Trim
 # Mackie CU pages
 MackieCUPage_Pan = 0
-MackieCUPage_Sample = 1
+MackieCUPage_Stereo = 1
 MackieCUPage_Sends = 2
 MackieCUPage_FX = 3
 MackieCUPage_EQ = 4
@@ -96,7 +97,7 @@ class TMackieCU():
 		self.MeterMax = 0
 		self.ActivityMax = 0
 
-		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Sample Manipulate                       (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)', 'Lotsa free controls')
+		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)',  'Lotsa free controls')
 		self.MackieCU_MeterModeNameT = ('Horizontal meters mode', 'Vertical meters mode', 'Disabled meters mode')
 		self.MackieCU_ExtenderPosT = ('left', 'right')
 
@@ -239,8 +240,6 @@ class TMackieCU():
 					if s != '':
 						s = ': ' + s
 					self.OnSendTempMsg(self.ColT[event.midiChan].SliderName + s, 500)
-				else:
-					event.handled = False
 
 ### Touch Faders
 		elif (event.midiId == midi.MIDI_NOTEON) | (event.midiId == midi.MIDI_NOTEOFF):  # NOTE
@@ -304,23 +303,20 @@ class TMackieCU():
 
 
 
-### This controls Page Rotarys 9-16
+### This controls Rotarys 9-16
 					elif event.data1 in [0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D]: # self.Page
 						self.SliderHoldCount +=  -1 + (int(event.data2 > 0) * 2)
 						if event.data2 > 0:
 							n = event.data1 - 0x28
-							if n < len(self.MackieCU_PageNameT):  # Ensure n is within valid range
-								self.OnSendTempMsg(self.MackieCU_PageNameT[n], 500)
-								self.SetPage(n)
-								device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16) )
+							self.OnSendTempMsg(self.MackieCU_PageNameT[n], 500)
+							self.SetPage(n)
+							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16) )
 
-# 0x54 is free now
-#					elif event.data1 == 0x54: # Drop Auto Marker
-#						device.directFeedback(event)
-#						if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
-#							self.OnSendTempMsg(ui.getHintMsg())
+					elif event.data1 == 0x54: # Drop Auto Marker
+						device.directFeedback(event)
+						if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
+							self.OnSendTempMsg(ui.getHintMsg())
 
-#0x55 is free now
 					elif event.data1 == 0x55: # Jump Markers
 						device.directFeedback(event)
 						if event.data2 > 0:
@@ -475,7 +471,6 @@ class TMackieCU():
 					event.handled = False
 			else:
 				event.handled = False
-
 
 	def SendMsg(self, Msg, Row = 0):
 		1==True
@@ -742,12 +737,10 @@ class TMackieCU():
 						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_Pan
 						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
 						self.ColT[m].KnobName = mixer.getTrackName( self.ColT[m].TrackNum) + ' - ' + 'Pan'
-
-					elif self.Page == MackieCUPage_Sample:
-						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + channels.selectOneChannel
+					elif self.Page == MackieCUPage_Stereo:
+						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_SS
 						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
 						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
-
 					elif self.Page == MackieCUPage_Sends:
 						self.ColT[m].KnobEventID = CurID + midi.REC_Mixer_Send_First + self.ColT[m].TrackNum
 						s = mixer.getEventIDName(self.ColT[m].KnobEventID)
