@@ -67,6 +67,13 @@ class TMackieCol:
 		self.Dirty = False
 		self.KnobHeld = False
 
+class TAccentModeParams:
+    def __init__(self, pitch, vel, pan, modx, mody):
+        self.Pitch = pitch
+        self.Vel = vel
+        self.Pan = pan
+        self.ModX = modx
+        self.ModY = mody
 
 class TMackieCU():
 	def __init__(self):
@@ -105,14 +112,14 @@ class TMackieCU():
 		self.AlphaTrack_SliderMax = round(13072 * 16000 / 12800)
 		self.ExtenderPos = ExtenderLeft
 
-	        self.AccentParams = TAccentModeParams(0, 0, 0, 0, 0)
-        	self.KnobAssignments = {
-            		0x10: "Pitch",
-            		0x11: "Velocity",
-            		0x12: "Pan",
-            		0x13: "ModX",
-            		0x14: "ModY"
-        	}
+		self.AccentParams = TAccentModeParams(0, 0, 0, 0, 0)
+		self.KnobAssignments = {
+			0x10: "Pitch",
+			0x11: "Velocity",
+			0x12: "Pan",
+			0x13: "ModX",
+			0x14: "ModY"
+		}
 
 	def OnInit(self):
 
@@ -190,23 +197,24 @@ class TMackieCU():
 			self.OnSendTempMsg(self.ArrowsStr + 'Pattern: ' + s, 500);
 
 	def OnMidiMsg(self, event):
-	    if event.midiId == midi.MIDI_CONTROLCHANGE and event.midiChan == 0:
-	        if event.data1 in self.KnobAssignments:
-	            param = self.KnobAssignments[event.data1]
-	            value = event.data2
-	            if param == "Pitch":
-        	        self.AccentParams.Pitch = value
-	            elif param == "Velocity":
-	                self.AccentParams.Vel = value
-	            elif param == "Pan":
-	                self.AccentParams.Pan = value
-	            elif param == "ModX":
-	                self.AccentParams.ModX = value
-	            elif param == "ModY":
-	                self.AccentParams.ModY = value
-	            self.OnSendTempMsg(f'{param} set to {value}', 1000)
-	            event.handled = True
-        	else:
+		if event.midiId == midi.MIDI_CONTROLCHANGE and event.midiChan == 0:
+			if event.data1 in self.KnobAssignments:
+				param = self.KnobAssignments[event.data1]
+				value = event.data2
+				if param == "Pitch":
+					self.AccentParams.Pitch = value
+				elif param == "Velocity":
+					self.AccentParams.Vel = value
+				elif param == "Pan":
+					self.AccentParams.Pan = value
+				elif param == "ModX":
+					self.AccentParams.ModX = value
+				elif param == "ModY":
+					self.AccentParams.ModY = value
+				self.OnSendTempMsg(f'{param} set to {value}', 1000)
+				event.handled = True
+			else:
+				pass
 
 		# if value > 64 is TRUE (-/decrement) else (+/increment)
 		if (event.midiId == midi.MIDI_CONTROLCHANGE):
