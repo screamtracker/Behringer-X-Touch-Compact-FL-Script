@@ -41,6 +41,7 @@ MackieCUPage_Sends = 2
 MackieCUPage_FX = 3
 MackieCUPage_EQ = 4
 MackieCUPage_Free = 5
+MackieCUPage_Accent = 6
 
 ExtenderLeft = 0
 ExtenderRight = 1
