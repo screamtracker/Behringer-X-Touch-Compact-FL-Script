@@ -19,9 +19,10 @@ A Python controller script for the X-Touch Compact controller and FL Studio 2024
 | **Marker**      | Nothing (Shift?)      | Drop Auto Marker        | 0x54      |
 | **Nudge**       | Edison Audiologger    | Jump Between Markers    | 0x55      |
 | **Cycle**       | Toggle Snap Line/None | Pattern/Song loop mode  | 0x56      |
-| **Master Fader**| Main Monitor level    | Master Fader            | CH8       |
 | **Bank**        | Bank Jump (8)         | Bank Jump (1)           | 0x2E/0x2F |
 | **Channel**     | Channel Jump (1)      | Marker Jump and Select  | 0x30/0x31 |
+| **Master Fader**| Main Monitor level    | Master Fader            | CH8       |
+| **Touch Fader** | NA                    | Select Mixer track      | 0x68/0x70 |
 
 **Flip** is useful but Track Select from the X-Touch takes you to mixer with no way to return to playlist, so an F5 toggle is preferred.
 
@@ -31,13 +32,13 @@ A Python controller script for the X-Touch Compact controller and FL Studio 2024
 
 **Loop** toggles quantize On/Off which isnt helpful with no jog wheel to move clips around. 
 
-**Master Fader** Who uses main monitor out? :man_facepalming: Master mixer mapped, bonus this fader is motorized :metal:
-
 **Banking** was weird. Jump +8 on first increment then +1 after. Jump back -16 with -1 afterwards :man_facepalming:  
 Now it increments by a bank of 1 and you can crank it to track 8 in a quarter turn.
 
-**Channel Select** virtually shifts all faders +/- 1 without decent screen feedback. You get lost, quick. Moreso with the original banking method.  
+**Channel Select** virtually shifts all faders +/- 1 without decent screen feedback. You get lost, quick.  
 Now I use it for marker jumps and it selects. 0x30 for back 0x31 for forward.
+
+**Master Fader** Who uses main monitor out? :man_facepalming: Master mixer mapped, bonus this fader is motorized :metal:
 
 **Fader touch** now works and selects the touched track in the mixer.
 
@@ -45,19 +46,10 @@ Now I use it for marker jumps and it selects. 0x30 for back 0x31 for forward.
 ### To Do:
 Refactor code to remove all non-usable buttons and jog methods **DONE**
 
-Channel is useless to me as well, will remap to global tempo or swing. Mapped to Marker.  **DONE**
+Channel is useless to me as well, will remap to global tempo or swing. Mapped to Marker Jump.  **DONE**
 
-Touch Faders. There are controls defined in the scipt, but only for 3 touch faders...? Will see. **DONE**
+Touch Faders. There are controls defined in the scipt, but only for 3 touch faders...? Now working. **DONE**
 
-Now that I have available touch faders and 0x55 I will look at more reassignments. I may reinstate Flip Mode.
+Try to reinstate Flip Mode for Pitch.
 
 Dive into the INST pot and see what I can do, it is a powerful control
-
----
-### Tested Bits
-Cycles thru windows, maybe better than dedicated F5/F6
-transport.globalTransport(midi.FPT_NextWindow, int(event.data2 > 0) * 1)
-
-Cycles thru channel tracks
-transport.globalTransport(midi.FPT_ChannelJog, int(event.data2 > 0) * 1, event.pmeFlags)
-
