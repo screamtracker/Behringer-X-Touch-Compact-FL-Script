@@ -334,11 +334,11 @@ class TMackieCU():
 					#	if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
 					#		self.OnSendTempMsg(ui.getHintMsg())
 ### Nudge
-					elif event.data1 == 0x55: # Jump Markers
-						device.directFeedback(event)
-						if event.data2 > 0:
-							transport.globalTransport(midi. FPT_MarkerJumpJog, event.pmeFlags) 
-							self.OnSendTempMsg(ui.getHintMsg())
+					#elif event.data1 == 0x55: # Jump Markers
+					#	device.directFeedback(event)
+					#	if event.data2 > 0:
+					#		transport.globalTransport(midi.FPT_MarkerJumpJog, event.pmeFlags)
+					#		self.OnSendTempMsg(ui.getHintMsg())
 
 ### RW/FWD will also move up and down in a menu
 
@@ -367,7 +367,9 @@ class TMackieCU():
 						transport.globalTransport(midi.FPT_Record, int(event.data2 > 0) * 2, event.pmeFlags)
 
 					elif event.data1 == 0x56: # song/loop
-						transport.globalTransport(midi.FPT_Loop, int(event.data2 > 0) * 2, event.pmeFlags)
+						transport.globalTransport(midi.FPT_NextWindow, int(event.data2 > 0) * 1)
+						#transport.globalTransport(midi.FPT_ChannelJog, int(event.data2 > 0) * 1, event.pmeFlags)
+						#transport.globalTransport(midi.FPT_Loop, int(event.data2 > 0) * 2, event.pmeFlags)
 
 #					elif event.data1 == 0x56: # snap Commented for reuse, toggles last snap level. Does shift cycle?
 #						if self.Shift:
