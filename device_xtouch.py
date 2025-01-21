@@ -294,13 +294,12 @@ class TMackieCU():
 
 
 ### Flip button
-					elif event.data1 == 0x32: # Press F5 - Playlist
-						device.directFeedback(event)
+					elif event.data1 == 0x32: # self.Flip
 						if event.data2 > 0:
-							transport.globalTransport(midi.FPT_F5, event.pmeFlags)
-							self.OnSendTempMsg(ui.getHintMsg()) 
-
-
+							self.Flip = not self.Flip
+							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16))
+							self.UpdateColT()
+							self.UpdateLEDs()
 
 ### This controls Rotarys 9-16
 					elif event.data1 in [0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D]: # self.Page
@@ -934,7 +933,7 @@ class TMackieCU():
 			# self.Flip
 			device.midiOutNewMsg((0x32 << 8) + midi.TranzPort_OffOnT[self.Flip], 18)
 			# snap
-			device.midiOutNewMsg((0x56 << 8) + midi.TranzPort_OffOnT[ui.getSnapMode() !=  3], 19)
+			#device.midiOutNewMsg((0x56 << 8) + midi.TranzPort_OffOnT[ui.getSnapMode() !=  3], 19)
 			# focused windows
 			device.midiOutNewMsg((0x4A << 8) + midi.TranzPort_OffOnT[ui.getFocused(midi.widBrowser)], 20)
 			device.midiOutNewMsg((0x4B << 8) + midi.TranzPort_OffOnT[ui.getFocused(midi.widChannelRack)], 21)
