@@ -48,6 +48,14 @@ ExtenderRight = 1
 
 OffOnStr = ('off', 'on')
 
+class TAccentModeParams:
+	def __init__(self, pitch, vel, pan, modx, mody):
+		self.Pitch = pitch
+		self.Vel = vel
+		self.Pan = pan
+		self.ModX = modx
+		self.ModY = mody
+
 class TMackieCol:
 	def __init__(self):
 		self.TrackNum = 0
@@ -794,6 +802,10 @@ class TMackieCU():
 								self.ColT[m].SliderEventID = -1
 								self.ColT[m].KnobEventID = -1
 								self.ColT[m].KnobMode = 4
+					elif self.Page == MackieCUPage_Accent:
+						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_SS
+						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
+						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
 
 					# self.Flip knob & slider
 					if self.Flip:
