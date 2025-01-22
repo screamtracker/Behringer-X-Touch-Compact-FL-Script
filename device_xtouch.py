@@ -105,7 +105,7 @@ class TMackieCU():
 		self.MeterMax = 0
 		self.ActivityMax = 0
 
-		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)',  'Lotsa free controls', 'Track Accents                          (press to reset)')
+		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)', 'Track Accents                     (press to reset)')
 		self.MackieCU_MeterModeNameT = ('Horizontal meters mode', 'Vertical meters mode', 'Disabled meters mode')
 		self.MackieCU_ExtenderPosT = ('left', 'right')
 
