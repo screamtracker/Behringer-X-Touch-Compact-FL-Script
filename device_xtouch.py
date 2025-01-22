@@ -136,6 +136,8 @@ class TMackieCU():
 		self.UpdateClicking()
 		self.UpdateMeterMode()
 
+		self.AccentParams = TAccentModeParams(pitch=0, vel=100, pan=64, modx=127, mody=0)
+
 		self.SetPage(self.Page)
 		self.OnSendTempMsg('Linked to ' + ui.getProgTitle() + ' (' + ui.getVersion() + ')', 2000);
 
