@@ -114,6 +114,9 @@ class TMackieCU():
 		self.AlphaTrack_SliderMax = round(13072 * 16000 / 12800)
 		self.ExtenderPos = ExtenderLeft
 
+		self.AccentMode = False # True when "accent" is enabled in step seq mode
+		self.AccentParams = TAccentModeParams(0, 0, 0, 0, 0) # default param values of steps in accent mode
+
 	def OnInit(self):
 
 		self.FirstTrackT[0] = 1
