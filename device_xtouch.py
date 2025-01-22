@@ -105,7 +105,7 @@ class TMackieCU():
 		self.MeterMax = 0
 		self.ActivityMax = 0
 
-		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)', 'Track Accents                     (press to reset)')
+		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)', 'Track Accents                     (press to reset)', 'Lotsa Controls')
 		self.MackieCU_MeterModeNameT = ('Horizontal meters mode', 'Vertical meters mode', 'Disabled meters mode')
 		self.MackieCU_ExtenderPosT = ('left', 'right')
 
@@ -408,6 +408,21 @@ class TMackieCU():
 							device.processMIDICC(event)
 							device.hardwareRefreshMixerTrack(self.ColT[i].TrackNum)
 							return
+
+
+					elif event.data1 == 0x40:  # Channel Rack
+						if self.Shift:
+							if ui.getFocused(5) == 0:
+								channels.focusEditor(channels.getChannelIndex(channels.selectedChannel()))
+								channels.showCSForm(channels.getChannelIndex(channels.selectedChannel(-1)))
+							else:
+								channels.focusEditor(channels.getChannelIndex(channels.selectedChannel()))
+								channels.showCSForm(channels.getChannelIndex(channels.selectedChannel(-1)), 0)
+						else:
+							ui.showWindow(midi.widChannelRack)
+							ui.setFocused(midi.widChannelRack)
+							self.SendMsg2("The Channel Rack Window is Open")
+
 
 ### Required. Links to channels
 					if (event.pmeFlags & midi.PME_System_Safe != 0):
