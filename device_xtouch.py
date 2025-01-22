@@ -105,7 +105,7 @@ class TMackieCU():
 		self.MeterMax = 0
 		self.ActivityMax = 0
 
-		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)',  'Lotsa free controls')
+		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)',  'Lotsa free controls', 'Track Accents                          (press to reset)')
 		self.MackieCU_MeterModeNameT = ('Horizontal meters mode', 'Vertical meters mode', 'Disabled meters mode')
 		self.MackieCU_ExtenderPosT = ('left', 'right')
 
@@ -808,7 +808,7 @@ class TMackieCU():
 								self.ColT[m].KnobEventID = -1
 								self.ColT[m].KnobMode = 4
 					elif self.Page == MackieCUPage_Accent:
-						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + midi.REC_Mixer_SS
+						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + self.AccentParams.Pitch
 						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
 						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
 
