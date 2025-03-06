@@ -2,6 +2,7 @@
 # url=https://github.com/screamtracker/Behringer-X-Touch-Compact-FL-Script
 # supportedDevices=Behringer X-Touch Compact
 
+# Modules: https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/midi_scripting.htm
 import playlist
 import channels
 import mixer
@@ -41,11 +42,20 @@ MackieCUPage_Sends = 2
 MackieCUPage_FX = 3
 MackieCUPage_EQ = 4
 MackieCUPage_Free = 5
+MackieCUPage_Accent = 6
 
 ExtenderLeft = 0
 ExtenderRight = 1
 
 OffOnStr = ('off', 'on')
+
+class TAccentModeParams:
+	def __init__(self, pitch, vel, pan, modx, mody):
+		self.Pitch = pitch
+		self.Vel = vel
+		self.Pan = pan
+		self.ModX = modx
+		self.ModY = mody
 
 class TMackieCol:
 	def __init__(self):
@@ -96,7 +106,7 @@ class TMackieCU():
 		self.MeterMax = 0
 		self.ActivityMax = 0
 
-		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)',  'Lotsa free controls')
+		self.MackieCU_PageNameT = ('Panning                                (press to reset)', 'Stereo separation                      (press to reset)',  'Sends for selected track              (press to enable)', 'Effects for selected track            (press to enable)', 'EQ for selected track                  (press to reset)', 'Track Accents                     (press to reset)', 'Lotsa Controls')
 		self.MackieCU_MeterModeNameT = ('Horizontal meters mode', 'Vertical meters mode', 'Disabled meters mode')
 		self.MackieCU_ExtenderPosT = ('left', 'right')
 
@@ -104,6 +114,9 @@ class TMackieCU():
 		self.ArrowsStr = chr(0x7F) + chr(0x7E) + chr(0x32)
 		self.AlphaTrack_SliderMax = round(13072 * 16000 / 12800)
 		self.ExtenderPos = ExtenderLeft
+
+		self.AccentMode = False # True when "accent" is enabled in step seq mode
+		self.AccentParams = TAccentModeParams(0, 0, 0, 0, 0) # default param values of steps in accent mode
 
 	def OnInit(self):
 
@@ -123,6 +136,8 @@ class TMackieCU():
 		self.SetBackLight(2) # backlight timeout to 2 minutes
 		self.UpdateClicking()
 		self.UpdateMeterMode()
+
+		self.AccentParams = TAccentModeParams(pitch=0, vel=100, pan=64, modx=127, mody=0)
 
 		self.SetPage(self.Page)
 		self.OnSendTempMsg('Linked to ' + ui.getProgTitle() + ' (' + ui.getVersion() + ')', 2000);
@@ -294,13 +309,12 @@ class TMackieCU():
 
 
 ### Flip button
-					elif event.data1 == 0x32: # Press F5 - Playlist
-						device.directFeedback(event)
+					elif event.data1 == 0x32: # self.Flip
 						if event.data2 > 0:
-							transport.globalTransport(midi.FPT_F5, event.pmeFlags)
-							self.OnSendTempMsg(ui.getHintMsg()) 
-
-
+							self.Flip = not self.Flip
+							device.dispatch(0, midi.MIDI_NOTEON + (event.data1 << 8) + (event.data2 << 16))
+							self.UpdateColT()
+							self.UpdateLEDs()
 
 ### This controls Rotarys 9-16
 					elif event.data1 in [0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D]: # self.Page
@@ -316,11 +330,11 @@ class TMackieCU():
 						if (transport.globalTransport(midi.FPT_AddMarker + int(self.Shift), int(event.data2 > 0) * 2, event.pmeFlags) == midi.GT_Global) & (event.data2 > 0):
 							self.OnSendTempMsg(ui.getHintMsg())
 
-					elif event.data1 == 0x55: # Jump Markers
-						device.directFeedback(event)
-						if event.data2 > 0:
-							transport.globalTransport(midi. FPT_MarkerJumpJog, event.pmeFlags) 
-							self.OnSendTempMsg(ui.getHintMsg())
+					#elif event.data1 == 0x55: # Jump Markers
+					#	device.directFeedback(event)
+					#	if event.data2 > 0:
+					#		transport.globalTransport(midi. FPT_MarkerJumpJog, event.pmeFlags) 
+					#		self.OnSendTempMsg(ui.getHintMsg())
 
 ### RW/FWD will also move up and down in a menu
 					elif (event.data1 == 0x5B) | (event.data1 == 0x5c) : # << >>
@@ -395,6 +409,21 @@ class TMackieCU():
 							device.processMIDICC(event)
 							device.hardwareRefreshMixerTrack(self.ColT[i].TrackNum)
 							return
+
+					# Seems like a fancy way of F6. may reuse for channel index
+					elif event.data1 == 0x40:  # Channel Rack
+						if self.Shift:
+							if ui.getFocused(5) == 0:
+								channels.focusEditor(channels.getChannelIndex(channels.selectedChannel()))
+								channels.showCSForm(channels.getChannelIndex(channels.selectedChannel(-1)))
+							else:
+								channels.focusEditor(channels.getChannelIndex(channels.selectedChannel()))
+								channels.showCSForm(channels.getChannelIndex(channels.selectedChannel(-1)), 0)
+						else:
+							ui.showWindow(midi.widChannelRack)
+							ui.setFocused(midi.widChannelRack)
+							self.SendMsg("The Channel Rack Window is Open")
+
 
 ### Required. Links to channels
 					if (event.pmeFlags & midi.PME_System_Safe != 0):
@@ -794,6 +823,10 @@ class TMackieCU():
 								self.ColT[m].SliderEventID = -1
 								self.ColT[m].KnobEventID = -1
 								self.ColT[m].KnobMode = 4
+					elif self.Page == MackieCUPage_Accent:
+						self.ColT[m].KnobEventID = self.ColT[m].BaseEventID + self.AccentParams.Pitch
+						self.ColT[m].KnobResetEventID = self.ColT[m].KnobEventID
+						self.ColT[m].KnobName = mixer.getTrackName(self.ColT[m].TrackNum) + ' - ' + 'Sep'
 
 					# self.Flip knob & slider
 					if self.Flip:
@@ -898,7 +931,6 @@ class TMackieCU():
 				self.UpdateTempMsg()
 
 	def UpdateLEDs(self):
-
 		if device.isAssigned():
 			# stop
 			device.midiOutNewMsg((0x5D << 8) + midi.TranzPort_OffOnT[transport.isPlaying() == midi.PM_Stopped], 0)
@@ -911,8 +943,8 @@ class TMackieCU():
 			device.midiOutNewMsg((0x71 << 8) + midi.TranzPort_OffOnT[ui.getTimeDispMin()], 3)
 			device.midiOutNewMsg((0x72 << 8) + midi.TranzPort_OffOnT[not ui.getTimeDispMin()], 4)
 			# self.Page
-			for m in range(0,  6):
-			  device.midiOutNewMsg(((0x28 + m) << 8) + midi.TranzPort_OffOnT[m == self.Page], 5 + m)
+			for m in range(0, 6):
+				device.midiOutNewMsg(((0x28 + m) << 8) + midi.TranzPort_OffOnT[m == self.Page], 5 + m)
 			# changed flag
 			device.midiOutNewMsg((0x50 << 8) + midi.TranzPort_OffOnT[general.getChangedFlag() > 0], 11)
 			# metronome
@@ -923,18 +955,17 @@ class TMackieCU():
 			device.midiOutNewMsg((0x65 << 8) + midi.TranzPort_OffOnT[self.Scrub], 15)
 			# use RUDE SOLO to show if any track is armed for recording
 			b = 0
-			for m in range(0,  mixer.trackCount()):
-			  if mixer.isTrackArmed(m):
-			    b = 1 + int(r)
-			    break
-
+			for m in range(0, mixer.trackCount()):
+				if mixer.isTrackArmed(m):
+					b = 1 + int(r)
+					break
 			device.midiOutNewMsg((0x73 << 8) + midi.TranzPort_OffOnBlinkT[b], 16)
 			# smoothing
 			device.midiOutNewMsg((0x33 << 8) + midi.TranzPort_OffOnT[self.SmoothSpeed > 0], 17)
 			# self.Flip
 			device.midiOutNewMsg((0x32 << 8) + midi.TranzPort_OffOnT[self.Flip], 18)
 			# snap
-			device.midiOutNewMsg((0x56 << 8) + midi.TranzPort_OffOnT[ui.getSnapMode() !=  3], 19)
+			# device.midiOutNewMsg((0x56 << 8) + midi.TranzPort_OffOnT[ui.getSnapMode() != 3], 19)
 			# focused windows
 			device.midiOutNewMsg((0x4A << 8) + midi.TranzPort_OffOnT[ui.getFocused(midi.widBrowser)], 20)
 			device.midiOutNewMsg((0x4B << 8) + midi.TranzPort_OffOnT[ui.getFocused(midi.widChannelRack)], 21)
@@ -944,11 +975,9 @@ class TMackieCU():
 		self.JogSource = Value
 
 	def OnWaitingForInput(self):
-
-	  self.SendTimeMsg('..........')
-
-	def UpdateClicking(self): # switch self.Clicking for transport buttons
-
+		self.SendTimeMsg('..........')
+	
+	def UpdateClicking(self):  # switch self.Clicking for transport buttons
 		if device.isAssigned():
 			device.midiOutSysex(bytes([0xF0, 0x00, 0x00, 0x66, 0x14, 0x0A, int(self.Clicking), 0xF7]))
 
